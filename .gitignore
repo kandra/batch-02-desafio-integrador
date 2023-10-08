@@ -10,3 +10,5 @@ cache
 artifacts
 
 README.assets
+
+.DS_Store
