@@ -30,7 +30,9 @@ const proofs = [
 
 before(async () => {
     [owner, alice] = await ethers.getSigners();
-    whitelistSigner = await hre.ethers.getSigner("0x007c5e822b66C5463a465ffC17BCf7E02aA9E1A4");
+    provider = ethers.provider;
+
+    // whitelistSigner = await hre.ethers.getSigner("0x007c5e822b66C5463a465ffC17BCf7E02aA9E1A4");
     // var whitelistAddress = "0x007c5e822b66C5463a465ffC17BCf7E02aA9E1A4";
     // signerWhitelist = await ethers.getSigner(whitelistAddress);
     // await network.provider.send("hardhat_setBalance", [
@@ -61,8 +63,8 @@ describe("Set up", function () {
         });
         
         // // Publicar Public Sale
-        // PublicSale = await hre.ethers.getContractFactory("PublicSale");
-        // contract_PublicSale = await PublicSale.deploy();
+        PublicSale = await hre.ethers.getContractFactory("PublicSale");
+        contract_PublicSale = await PublicSale.deploy();
     });
 });
 
@@ -162,50 +164,78 @@ describe("Cuy Collection NFT - BURN", function () {
             params: ["0x007c5e822b66C5463a465ffC17BCf7E02aA9E1A4"] 
         });
     });
-    it("---testing getting URI for NFT", async() =>{
-        // await contract_CuyCollectionNFT.buyBack()
-        await contract_CuyCollectionNFT.safeMint(alice.address, 0);
-        var r = await contract_CuyCollectionNFT.tokenURI(0);
-        // console.log("URI: "+r);
-    });
+    // it("---testing getting URI for NFT", async() =>{
+    //     // await contract_CuyCollectionNFT.buyBack()
+    //     await contract_CuyCollectionNFT.safeMint(alice.address, 0);
+    //     var r = await contract_CuyCollectionNFT.tokenURI(0);
+    //     // console.log("URI: "+r);
+    // });
 });
-// describe("Public Sale tests", function () {
-//     it("Helper: Price", async() => { 
+describe("Public Sale tests", function () {
+    it("Helper: Price", async() => { 
 
-//         // Token is outside allowed range
-//         await expect(contract_PublicSale.getPriceForId(8880)).to.revertedWith("Token ID must be between 0 and 699");
+        // Token is outside allowed range
+        await expect(contract_PublicSale.getPriceForId(8880)).to.revertedWith("Token ID must be between 0 and 699");
 
-//         // Common token price
-//         var price = await contract_PublicSale.getPriceForId(100);
-//         expect(price).to.be.equal(1000*10**DECIMALS_BBTKN, `Price for common token should be 100000000 BBTKN and it's at ${price}`);
+        // Common token price
+        var price = await contract_PublicSale.getPriceForId(100);
+        expect(price).to.be.equal(1000*10**DECIMALS_BBTKN, `Price for common token should be 100000000 BBTKN and it's at ${price}`);
 
-//         // Rare token price
-//         var price = await contract_PublicSale.getPriceForId(444);
-//         expect(price).to.be.equal(444*20*10**DECIMALS_BBTKN, `Price for rare token is not as expected`);
+        // Rare token price
+        var price = await contract_PublicSale.getPriceForId(444);
+        expect(price).to.be.equal(444*20*10**DECIMALS_BBTKN, `Price for rare token is not as expected`);
 
-//         var price_contract = await contract_PublicSale.getPriceForId(666);
-//         days = Math.floor((Date.now() - startDate)/3600*24);
-//         price = 10000+(2000*days);
-//         if (price > 90000) price = 90000;
-//         expect(price_contract).to.be.equal(price*10**DECIMALS_BBTKN, `Price for Legendary token is not as expected`);
+        var price_contract = await contract_PublicSale.getPriceForId(666);
+        days = Math.floor((Date.now() - startDate)/3600*24);
+        price = 10000+(2000*days);
+        if (price > 90000) price = 90000;
+        expect(price_contract).to.be.equal(price*10**DECIMALS_BBTKN, `Price for Legendary token is not as expected`);
 
-//         // TODO: Token is already taken
-//     });
-//     it("BBTKN to buy", async() => {
+        // TODO: Token is already taken
+    });
+    it("Ether to buy - wrong token ID", async() => {
+        await expect(contract_PublicSale.purchaseWithEtherAndId(1, {value: ethers.parseEther("0.01")})).to.revertedWith("Token ID should be within range 700 - 999");
+
+    });
+    
+    it("Ether to buy - not enough ether", async() => {
+        await expect( contract_PublicSale.purchaseWithEtherAndId(777)).to.revertedWith("Send at least 0.01 Ether");
+        await expect( contract_PublicSale.purchaseWithEtherAndId( 777, { value: 10000 } )).to.revertedWith("Send at least 0.01 Ether");
+    });
+    it("Ether to buy - validate mint", async() => {
+        await expect(contract_PublicSale.connect(alice).purchaseWithEtherAndId(777, {value: ethers.parseEther("0.01")})).to.emit(contract_PublicSale, "PurchaseNftWithId");
+        await expect(await contract_PublicSale.tokenBuyer(777)).to.equal(alice.address);
         
-//         // buy common
-//         // buy rare
-//         // buy legendary
-//         // buy mystic
-//     });
-//     // buy common
-//     // buy rare
-//     // buy legendary
-//     // buy mystic
-//     // buy via BBTKN
-//     // buy via ether
-//     // buy via USDC
-//     // withdraw ETH
-//     // withdraw tokens BBTKN
+    });
+    it("Ether to buy - give change", async() => {
+        const initBalance = await provider.getBalance(alice.address);
+        //expect(contract_PublicSale.connect(alice).purchaseWithEtherAndId(888, {value: ethers.parseEther("1")})).to.emit(contract_PublicSale, "PurchaseNftWithId");
+        const tx = await contract_PublicSale.connect(alice).purchaseWithEtherAndId(888, {value: ethers.parseEther("1")});
+        const receipt = await tx.wait();
+        const gasSpent = BigInt(receipt.gasUsed) * BigInt(receipt.gasPrice);
+        const newBalance = await provider.getBalance(alice.address);
+
+        // console.log(newBalance - (initBalance - gasSpent - pEth("0.01")));
+        expect(newBalance).to.equal(initBalance-pEth("0.01")-gasSpent);
+
+    });
+    it("Ether to buy - Token ID already taken", async() => {
+        await expect(contract_PublicSale.connect(alice).purchaseWithEtherAndId(777, {value: ethers.parseEther("0.01")})).to.revertedWith("Token ID has already been claimed");
+    });
+    it("Ether to buy - random token ID", async() => {
+        await expect(contract_PublicSale.connect(alice).depositEthForARandomNft({value: pEth("0.01")})).to.emit(contract_PublicSale, "PurchaseNftWithId");
+        // for (var i = 0; i<300; i++){
+        //     await expect(contract_PublicSale.connect(alice).depositEthForARandomNft({value: pEth("0.01")})).to.emit(contract_PublicSale, "PurchaseNftWithId");
+        // }
+    });
+    // buy common
+    // buy rare
+    // buy legendary
+
+    // buy via BBTKN
    
-// });
+    // buy via USDC
+    // withdraw ETH
+    // withdraw tokens BBTKN
+   
+});
