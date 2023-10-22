@@ -203,7 +203,7 @@ Crear un front-end minimalista para poder interactuar con el contrato de `Public
 1. Token ERC20 `BBITES Token - BBTKN`
 2. Contrato NFT `ERC721` con una colección de 2000 cuyes
 3. Contrato de `Public Sale`
-4. Stable Coin `USDC` ficticio
+4. Stable Coin `USDC` ficticio - 0xe6666d3bcE86933b4a3b96f364a263d79312dEEc
 5. Autotask: `Goerli` a `Mumbai`. Incluye código en `goerliToMumbai.js`.
 6. Autotask: `Mumbai` a `Goerli`. Incluye código en `mumbaiToGoerli.js`.
 7. Pool de liquidez en Uniswap V2
