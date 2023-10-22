@@ -98,8 +98,17 @@ contract PublicSale is Pausable, AccessControl {
     }
 
     function withdrawEther() public onlyRole(DEFAULT_ADMIN_ROLE){
-        console.log("balance: %s", address(this).balance);
+        // console.log("balance: %s", address(this).balance);
         payable(msg.sender).transfer(address(this).balance);
+    }
+
+    function withdrawTokens() public onlyRole(DEFAULT_ADMIN_ROLE){
+        // console.log("address token: %s", address(bbitesToken));
+        uint256 balance = bbitesToken.balanceOf(address(this));
+        // console.log("balance BBTKN1 %s", balance);
+        bbitesToken.transfer(msg.sender, balance);
+        // console.log("balance BBTKN2 %s", bbitesToken.balanceOf(address(this)));
+        // console.log("balance BBTKN2 %s", bbitesToken.balanceOf(msg.sender));
     }
 
 

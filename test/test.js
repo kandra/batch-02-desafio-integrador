@@ -5,6 +5,7 @@ var { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 const { getRole, deploySC, deploySCNoUp, ex, pEth } = require("../utils");
 
+const DEFAULT_ADMIN_ROLE = getRole("DEFAULT_ADMIN_ROLE");
 const MINTER_ROLE = getRole("MINTER_ROLE");
 const BURNER_ROLE = getRole("BURNER_ROLE");
 
@@ -268,11 +269,27 @@ describe("Public Sale tests", function () {
         await expect(contract_PublicSale.connect(alice).purchaseWithTokens(666)).to.emit(contract_PublicSale, "PurchaseNftWithId");
     });
     it("BBTKN to buy - Token ID is already taken", async() => {
-        // await expect(contract_PublicSale.connect(alice).purchaseWithTokens(4929)).to.revertedWith("Token ID must be between 0 and 699");
+        await expect(contract_PublicSale.connect(alice).purchaseWithTokens(666)).to.revertedWith("Token ID is already taken");
     });
-    
+    it("Withdraw all ETH can only be done by admin/owner", async() => {
+        await expect(contract_PublicSale.connect(alice).withdrawEther()).to.be.reverted;
+
+        var balance = await ethers.provider.getBalance(contract_PublicSale.target);
+        await expect(
+            contract_PublicSale.connect(owner).withdrawEther()
+        ).to.changeEtherBalance(owner, balance);
+    });
+    it("Withdraw all tokens BBTKN can only be done by admin/owner", async() => {
+        // console.log("address contract token: " + contract_BBitesToken.target);
+        await expect(contract_PublicSale.connect(alice).withdrawTokens()).to.be.reverted;
+        
+        var balance = await contract_BBitesToken.balanceOf(contract_PublicSale.target);
+        console.log("balance tokens: " + balance);
+        await expect(
+            contract_PublicSale.connect(owner).withdrawTokens()
+        ).to.changeTokenBalances(contract_BBitesToken, [contract_PublicSale, owner], [-balance, balance]);
+    });
+
     // buy via USDC
-    // withdraw ETH
-    // withdraw tokens BBTKN
    
 });
