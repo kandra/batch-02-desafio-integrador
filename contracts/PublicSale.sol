@@ -35,9 +35,15 @@ contract PublicSale is Pausable, AccessControl {
     }
 
     function purchaseWithTokens(uint256 _id) public whenNotPaused {
-        require(tokenBuyer[_id]==address(0), "Token ID has already been claimed");
-
-
+        // console.log("id: %s", _id);
+        // require(_id >= 699, "Token ID is out of range 0 - 699");
+        // require(tokenBuyer[_id]==address(0), "Token ID has already been claimed");
+        uint256 price = getPriceForId(_id);
+        uint256 allowance = bbitesToken.allowance(msg.sender, address(this));
+        console.log("allowance: %s, price %s", allowance, price);
+        require(allowance >= price, "Give approval to this contract to transfer the required tokens");
+        bbitesToken.transferFrom(msg.sender, address(this), price);
+        tokenBuyer[_id] = msg.sender;
         emit PurchaseNftWithId(msg.sender, _id);
     }
 
@@ -145,4 +151,11 @@ contract PublicSale is Pausable, AccessControl {
         ) % 300 + 700;
         return randomNumber;
     }
+
+    function setTokenContract(address _address) public onlyRole(DEFAULT_ADMIN_ROLE){
+        bbitesToken = IBBitesToken(_address);
+    }
+    // function setUSDCContract(address _address) public onlyRole(DEFAULT_ADMIN_ROLE){
+
+    // }
 }

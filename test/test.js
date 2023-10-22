@@ -65,6 +65,11 @@ describe("Set up", function () {
         // // Publicar Public Sale
         PublicSale = await hre.ethers.getContractFactory("PublicSale");
         contract_PublicSale = await PublicSale.deploy();
+        await contract_PublicSale.setTokenContract(contract_BBitesToken.target);
+
+        USDC = await hre.ethers.getContractFactory("USDCoin");
+        contract_USDC = await USDC.deploy();
+        // await contract_PublicSale.setUSDCContract(contract_USDC.address);
     });
 });
 
@@ -233,7 +238,39 @@ describe("Public Sale tests", function () {
     // buy legendary
 
     // buy via BBTKN
-   
+    it("BBTKN to buy - Token ID is out of range", async() => {
+        await expect(contract_PublicSale.connect(alice).purchaseWithTokens(4929)).to.revertedWith("Token ID must be between 0 and 699");
+    });
+    it("BBTKN to buy - No approval", async() => {
+        await expect(contract_PublicSale.connect(alice).purchaseWithTokens(111)).to.revertedWith("Give approval to this contract to transfer the required tokens");
+    });
+    it("BBTKN to buy - Not enough approval", async() => {
+        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, 500);
+        await expect(contract_PublicSale.connect(alice).purchaseWithTokens(111)).to.revertedWith("Give approval to this contract to transfer the required tokens");
+    });
+    it("BBTKN to buy - Not enough BBTKN balance", async() => {
+        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("500"));
+        await expect(contract_PublicSale.connect(alice).purchaseWithTokens(111)).to.revertedWith("ERC20: transfer amount exceeds balance");
+    });
+    it("BBTKN to buy - Buying common token", async() => {
+        await contract_BBitesToken.connect(owner).mint(alice.address, pEth("90000"));
+        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("500"));
+        await expect(contract_PublicSale.connect(alice).purchaseWithTokens(111)).to.emit(contract_PublicSale, "PurchaseNftWithId");
+    });
+    it("BBTKN to buy - Buying rare token", async() => {
+        await contract_BBitesToken.connect(owner).mint(alice.address, pEth("90000"));
+        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("500"));
+        await expect(contract_PublicSale.connect(alice).purchaseWithTokens(333)).to.emit(contract_PublicSale, "PurchaseNftWithId");
+    });
+    it("BBTKN to buy - Buying legendary token", async() => {
+        await contract_BBitesToken.connect(owner).mint(alice.address, pEth("90000"));
+        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("500"));
+        await expect(contract_PublicSale.connect(alice).purchaseWithTokens(666)).to.emit(contract_PublicSale, "PurchaseNftWithId");
+    });
+    it("BBTKN to buy - Token ID is already taken", async() => {
+        // await expect(contract_PublicSale.connect(alice).purchaseWithTokens(4929)).to.revertedWith("Token ID must be between 0 and 699");
+    });
+    
     // buy via USDC
     // withdraw ETH
     // withdraw tokens BBTKN
