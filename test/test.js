@@ -14,7 +14,7 @@ var startDate = 1696032000;
 
 var owner, alice, signerWhitelist;
 
-const DECIMALS_BBTKN = 6;
+const DECIMALS_BBTKN = 18;
 
 const proofs = [
     '0x9682923cee08a0d2c343f252beae1ef85540e977e80fa686488f9f10ea4685ec',
@@ -28,6 +28,9 @@ const proofs = [
     '0x7bb0854a5a2a180c8416993d26910d3100cd9f9bc389fb8ac6449d3e37c467d7',
     '0x7f818777dfe171b443c8a7d57bd2d50e26850f9bd2640b905e5e0b82d205818c'
   ];
+
+var addressUSDC = "0xe6666d3bcE86933b4a3b96f364a263d79312dEEc";
+var addressBBTKN = "0xe9bE45d717b89612f37E6A512ceeC8388A0416Fc";
 
 before(async () => {
     [owner, alice] = await ethers.getSigners();
@@ -63,14 +66,16 @@ describe("Set up", function () {
             kind: "uups",
         });
         
+
+        // Publicar USDC clone
+        USDC = await hre.ethers.getContractFactory("USDCoin");
+        contract_USDC = await USDC.deploy();
+
         // // Publicar Public Sale
         PublicSale = await hre.ethers.getContractFactory("PublicSale");
         contract_PublicSale = await PublicSale.deploy();
         await contract_PublicSale.setTokenContract(contract_BBitesToken.target);
-
-        USDC = await hre.ethers.getContractFactory("USDCoin");
-        contract_USDC = await USDC.deploy();
-        // await contract_PublicSale.setUSDCContract(contract_USDC.address);
+        await contract_PublicSale.setUSDCContract(contract_USDC.target);
     });
 });
 
@@ -234,9 +239,6 @@ describe("Public Sale tests", function () {
         //     await expect(contract_PublicSale.connect(alice).depositEthForARandomNft({value: pEth("0.01")})).to.emit(contract_PublicSale, "PurchaseNftWithId");
         // }
     });
-    // buy common
-    // buy rare
-    // buy legendary
 
     // buy via BBTKN
     it("BBTKN to buy - Token ID is out of range", async() => {
@@ -291,5 +293,47 @@ describe("Public Sale tests", function () {
     });
 
     // buy via USDC
-   
+    // it("USDC to buy - returns estimation on how much USDC is needed", async() => {
+    //     var amount = await contract_PublicSale.getAmountIn(10000,addressUSDC, addressBBTKN);
+    //     console.log("amount in: " + amount);
+    // });
+    it("USDC to buy - Token ID is out of range", async() => {
+        await expect(contract_PublicSale.connect(alice).purchaseWithUSDC(4929, 5000)).to.revertedWith("Token ID must be between 0 and 699");
+    });
+    it("USDC to buy - No approval", async() => {
+        await expect(contract_PublicSale.connect(alice).purchaseWithUSDC(222, 5000)).to.revertedWith("Give approval to this contract to transfer the required tokens");
+    });
+    it("USDC to buy - Not enough approval", async() => {
+        await contract_USDC.connect(alice).approve(contract_PublicSale.target, 500);
+        await expect(contract_PublicSale.connect(alice).purchaseWithUSDC(222,5000)).to.revertedWith("Give approval to this contract to transfer the required tokens");
+    });
+    it("USDC to buy - Not enough USDC sent", async() => {
+        // await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("500"));
+        await expect(contract_PublicSale.connect(alice).purchaseWithUSDC(222, 10)).to.be.reverted;
+    });
+    // Getting change
+    // it("USDC to buy - Buying common token", async() => {
+    //     var price = await contract_PublicSale.getPriceForId(222);
+    //     console.log(price);
+    //     await contract_USDC.connect(owner).mint(alice.address, pEth("100"));
+    //     await contract_USDC.connect(alice).approve(contract_PublicSale.target, pEth("100"));
+    //     var balance = await contract_USDC.balanceOf(alice.address);
+    //     console.log("pre-balance de alice: " + balance );
+    //     await expect(contract_PublicSale.connect(alice).purchaseWithUSDC(222, pEth("100"))).to.emit(contract_PublicSale, "PurchaseNftWithId");
+    //     balance = await contract_USDC.balanceOf(alice.address);
+    //     console.log("post-balance de alice: " + balance );
+    // });
+    // it("USDC to buy - Buying rare token", async() => {
+    //     await contract_BBitesToken.connect(owner).mint(alice.address, pEth("90000"));
+    //     await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("500"));
+    //     await expect(contract_PublicSale.connect(alice).purchaseWithTokens(333)).to.emit(contract_PublicSale, "PurchaseNftWithId");
+    // });
+    // it("BBTKN to buy - Buying legendary token", async() => {
+    //     await contract_BBitesToken.connect(owner).mint(alice.address, pEth("90000"));
+    //     await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("500"));
+    //     await expect(contract_PublicSale.connect(alice).purchaseWithTokens(666)).to.emit(contract_PublicSale, "PurchaseNftWithId");
+    // });
+    it("USDC to buy - Token ID is already taken", async() => {
+        await expect(contract_PublicSale.connect(alice).purchaseWithUSDC(111, 5000)).to.revertedWith("Token ID is already taken");
+    });
 });

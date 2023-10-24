@@ -6,11 +6,12 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import {IUniSwapV2Router02, IBBitesToken} from "./Interfaces.sol";
+import {IUniSwapV2Router02, IBBitesToken, IUSDCoin} from "./Interfaces.sol";
 
 contract PublicSale is Pausable, AccessControl {
     IUniSwapV2Router02 router;
     IBBitesToken bbitesToken;
+    IUSDCoin usdcToken;
 
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
@@ -22,9 +23,12 @@ contract PublicSale is Pausable, AccessControl {
     // Maximo price NFT
     uint256 constant MAX_PRICE_NFT = 90_000 * 10 ** 18;
 
-    uint8 constant DECIMALS_BBTKN = 6;
+    uint8 constant DECIMALS_BBTKN = 18;
     mapping(uint256 => address) public tokenBuyer;
     uint256 misticAvailable = 300;
+
+    address addressTokenUSDC;
+    address addressTokenBBTKN;
 
     event PurchaseNftWithId(address account, uint256 id);
 
@@ -32,6 +36,9 @@ contract PublicSale is Pausable, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(UPGRADER_ROLE, msg.sender);
+        // bbitesToken = IBBitesToken(0xe9bE45d717b89612f37E6A512ceeC8388A0416Fc);
+        // usdcToken = IUSDCoin(0xe6666d3bcE86933b4a3b96f364a263d79312dEEc);
+        router = IUniSwapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     }
 
     function purchaseWithTokens(uint256 _id) public whenNotPaused {
@@ -48,13 +55,43 @@ contract PublicSale is Pausable, AccessControl {
     }
 
     function purchaseWithUSDC(uint256 _id, uint256 _amountIn) external whenNotPaused {
+        uint256 amountOut = getPriceForId(_id);
+        require(
+            usdcToken.allowance(msg.sender, address(this))>= _amountIn, 
+            "Give approval to this contract to transfer the required tokens"
+        );
         // transfiere _amountIn de USDC a este contrato
+        require(
+            usdcToken.transferFrom(msg.sender, address(this), _amountIn) == true,
+            "Error while transfering USDC to this contract"
+        );
+
         // llama a swapTokensForExactTokens: valor de retorno de este metodo es cuanto gastaste del token input
+        address[] memory path;
+        // Token a entregar - USDC
+        path[0] = addressTokenUSDC;
+        // Token a recibir - BBTKN
+        path[1] = addressTokenBBTKN;
+
+        uint[] memory amounts = router.swapTokensForExactTokens(
+            amountOut,
+            _amountIn,
+            path,
+            msg.sender,
+            block.timestamp + 2000
+        );
+        console.log("amount returned swap tokens: %s / %s", amounts[0], amounts[1]);
+
         // transfiere el excedente de USDC a msg.sender
+        uint256 change = _amountIn - amounts[0];
+        require(
+            usdcToken.transferFrom(address(this), msg.sender, change) == true,
+            "Error while transfering USDC to the sender"
+        );
 
-
+        tokenBuyer[_id] = msg.sender;
         emit PurchaseNftWithId(msg.sender, _id);
-    }
+    } 
 
     function purchaseWithEtherAndId(uint256 _id) public payable whenNotPaused {
         require(tokenBuyer[_id]==address(0), "Token ID has already been claimed");
@@ -111,6 +148,15 @@ contract PublicSale is Pausable, AccessControl {
         // console.log("balance BBTKN2 %s", bbitesToken.balanceOf(msg.sender));
     }
 
+    // function getAmountIn(uint _amountOut, address _tokenUSDC, address _tokenBBTKN) public view returns (uint amountIn){
+    //     address factoryA = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
+    //     uint256 reserveA; 
+    //     uint256 reserveB;
+    //     (reserveA, reserveB) = router.getReserves(factoryA, _tokenUSDC, _tokenBBTKN);
+    //     console.log("reserva usdc %s", reserveA);
+    //     console.log("reserva bbtkn %s", reserveB);
+    //     return router.getAmountIn(_amountOut, reserveA, reserveB);
+    // }
 
 
     receive() external payable {
@@ -163,8 +209,10 @@ contract PublicSale is Pausable, AccessControl {
 
     function setTokenContract(address _address) public onlyRole(DEFAULT_ADMIN_ROLE){
         bbitesToken = IBBitesToken(_address);
+        addressTokenBBTKN = _address;
     }
-    // function setUSDCContract(address _address) public onlyRole(DEFAULT_ADMIN_ROLE){
-
-    // }
+    function setUSDCContract(address _address) public onlyRole(DEFAULT_ADMIN_ROLE){
+        usdcToken = IUSDCoin(_address);
+        addressTokenUSDC = _address;
+    }
 }
