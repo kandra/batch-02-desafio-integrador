@@ -200,13 +200,21 @@ Crear un front-end minimalista para poder interactuar con el contrato de `Public
 
 ## Entregables
 
-1. Token ERC20 `BBITES Token - BBTKN`
+1. Token ERC20 `BBITES Token - BBTKN` 
+BBitesToken Proxy Address: 0xe9bE45d717b89612f37E6A512ceeC8388A0416Fc
+BBitesToken Impl Address: 0x17F39f385918913a4d034Eb4874beE1dd060b5c3
+
+-BBitesToken Proxy Address: 0x43Dd550c4Dc782e59B6595A89992A9900EE4083E
+BBitesToken Impl Address: 0x17F39f385918913a4d034Eb4874beE1dd060b5c3-
 2. Contrato NFT `ERC721` con una colección de 2000 cuyes
-3. Contrato de `Public Sale`
+CuyCollectionNFT Proxy Address: 0xadC7cd04E6693C816ef8d314e526A5684f13D752
+CuyCollectionNFT Impl Address: 0x7bb378B39F1730E3aDeAe20033AFbaAA9fC944C4
+3. Contrato de `Public Sale` - 0xb044dA5A4E702023928E54b3A578233ad8e343c2
+0xD9c5636ec5f32480bee86544E99AF3FdA811F81C
 4. Stable Coin `USDC` ficticio - 0xe6666d3bcE86933b4a3b96f364a263d79312dEEc
 5. Autotask: `Goerli` a `Mumbai`. Incluye código en `goerliToMumbai.js`.
 6. Autotask: `Mumbai` a `Goerli`. Incluye código en `mumbaiToGoerli.js`.
-7. Pool de liquidez en Uniswap V2
+7. Pool de liquidez en Uniswap V2 - https://app.uniswap.org/add/v2/0xe9bE45d717b89612f37E6A512ceeC8388A0416Fc/0xe6666d3bcE86933b4a3b96f364a263d79312dEEc
 8. Front-end con los métodos implementados del punto `8 - Front-end`
 9. Testing con alta cobertura para `Public Sale`
 10. Testing con alta cobertura para `ERC721`

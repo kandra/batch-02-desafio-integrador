@@ -1,9 +1,11 @@
 import { Contract, ethers } from "ethers";
 
-import usdcTknAbi from "../artifacts/contracts/USDCoin.sol/USDCoin.json";
-// import bbitesTokenAbi
+var usdcTknAbi = require("../artifacts/contracts/USDCoin.sol/USDCoin.json").abi;
+var bbitesTokenAbi = require("../artifacts/contracts/BBitesToken.sol/BBitesToken.json").abi;
 // import publicSaleAbi
+var publicSaleAbi = require("../artifacts/contracts/PublicSale.sol/PublicSale.json").abi;
 // import nftTknAbi
+var nftTknAbi = require("../artifacts/contracts/CuyCollectionNft.sol/CuyCollectionNFT.json").abi;
 
 // SUGERENCIA: vuelve a armar el MerkleTree en frontend
 // Utiliza la libreria buffer
@@ -35,13 +37,14 @@ var usdcAddress, bbitesTknAdd, pubSContractAdd;
 function initSCsGoerli() {
   provider = new ethers.BrowserProvider(window.ethereum);
 
-  usdcAddress = "";
-  bbitesTknAdd = "";
-  pubSContractAdd = "";
+  usdcAddress = "0xe6666d3bcE86933b4a3b96f364a263d79312dEEc";
+  bbitesTknAdd = "0xe9bE45d717b89612f37E6A512ceeC8388A0416Fc";
+  pubSContractAdd = "0xb044dA5A4E702023928E54b3A578233ad8e343c2";
 
-  usdcTkContract; // = new Contract(...
-  bbitesTknContract; // = new Contract(...
-  pubSContract; // = new Contract(...
+  // Contract = address + abi + provider
+  usdcTkContract = new Contract(usdcAddress, usdcTknAbi, provider);
+  bbitesTknContract = new Contract(bbitesTknAdd ,bbitesTokenAbi, provider); // = new Contract(...
+  pubSContract = new Contract(pubSContractAdd, publicSaleAbi, provider);
 }
 
 function initSCsMumbai() {
@@ -68,37 +71,120 @@ function setUpListeners() {
   });
 
   // USDC Balance - balanceOf
-  var bttn = document.getElementById("usdcUpdate");
-  bttn.addEventListener("click", async function () {
+  var bttnUSDC = document.getElementById("usdcUpdate");
+  bttnUSDC.addEventListener("click", async function () {
     var balance = await usdcTkContract.balanceOf(account);
     var balanceEl = document.getElementById("usdcBalance");
     balanceEl.innerHTML = ethers.formatUnits(balance, 6);
   });
 
   // Bbites token Balance - balanceOf
+  var bttnBBTKN = document.getElementById("bbitesTknUpdate");
+  bttnBBTKN.addEventListener("click", async function () {
+    var balance = await bbitesTknContract.balanceOf(account);
+    var balanceEl = document.getElementById("bbitesTknBalance");
+    // console.log("balance BBToken: " + balance);
+    balanceEl.innerHTML = ethers.formatUnits(balance, 18);
+  });
 
   // APPROVE BBTKN
   // bbitesTknContract.approve
-  var bttn = document.getElementById("approveButtonBBTkn");
+  var bttnApproveBBTKN = document.getElementById("approveButtonBBTkn");
+  bttnApproveBBTKN.addEventListener("click", async function() {
+    var approveAmount = document.getElementById("approveInput").value;
+    var approveError = document.getElementById("approveError");
+    try {
+      // console.log(approveAmount);
+      approveError.innerHTML = "Approve on Metamask...";
+      var tx = await bbitesTknContract.connect(signer).approve(pubSContractAdd, approveAmount);
+      approveError.innerHTML = "Waiting response...";
+      var response = await tx.wait();
+      // console.log("Tx Hash " + response.hash);
+      approveError.innerHTML = "Success! Transaction hash: " + response.hash;
+    } catch (error) {
+      console.log(error.reason);
+      approveError.innerHTML = error.reason;
+    }
+  });
 
   // APPROVE USDC
   // usdcTkContract.approve
-  var bttn = document.getElementById("approveButtonUSDC");
+  var bttnApproveUSDC = document.getElementById("approveButtonUSDC");
+  bttnApproveUSDC.addEventListener("click", async function() {
+    var approveAmount = document.getElementById("approveInputUSDC").value;
+    var approveError = document.getElementById("approveErrorUSDC");
+    try {
+      // console.log(approveAmount);
+      approveError.innerHTML = "Approve on Metamask...";
+      var tx = await usdcTkContract.connect(signer).approve(pubSContractAdd, approveAmount);
+      approveError.innerHTML = "Waiting response...";
+      var response = await tx.wait();
+      // console.log("Tx Hash " + response.hash);
+      approveError.innerHTML = "Success! Transaction hash: " + response.hash;
+    } catch (error) {
+      console.log(error.reason);
+      approveError.innerHTML = error.reason;
+    }
+  });
 
   // purchaseWithTokens
-  var bttn = document.getElementById("purchaseButton");
+  var bttnBuyBBTKN = document.getElementById("purchaseButton");
+  bttnBuyBBTKN.addEventListener("click", async() => {
+    var tokenId = document.getElementById("purchaseInput").value;
+    console.log("token: "+tokenId);
+    try {
+      purchaseError.innerHTML = "Approve transaction in Metamask...";
+      var tx = await pubSContract.connect(signer).purchaseWithTokens(tokenId);
+      purchaseError.innerHTML = "Waiting response...";
+      var response = await tx.wait();
+      console.log("Tx Hash " + response.hash);
+      purchaseError.innerHTML = "Success! Transaction hash: " + response.hash;
+      
+    } catch (error) {
+      console.log(error);
+      purchaseError.innerHTML = error.reason;
+    }
+
+  });
 
   // purchaseWithUSDC
   var bttn = document.getElementById("purchaseButtonUSDC");
 
   // purchaseWithEtherAndId
-  var bttn = document.getElementById("purchaseButtonEtherId");
+  var bttnBuyEtherId = document.getElementById("purchaseButtonEtherId");
+  bttnBuyEtherId.addEventListener("click", async() => {
+    var tokenId = document.getElementById("purchaseInputEtherId").value;
+    var purchaseError = document.getElementById("purchaseEtherIdError");
+    try {
+      purchaseError.innerHTML = "Approve transaction in Metamask...";
+      var tx = await pubSContract.connect(signer).purchaseWithEtherAndId(tokenId, { value: 0.01 });
+      purchaseError.innerHTML = "Waiting response...";
+      var response = await tx.wait();
+      console.log("Tx Hash " + response.hash);
+      purchaseError.innerHTML = "Success! Transaction hash: " + response.hash;
+      
+    } catch (error) {
+      console.log(error);
+      purchaseError.innerHTML = error.reason;
+    }
+  });
 
   // send Ether
   var bttn = document.getElementById("sendEtherButton");
 
   // getPriceForId
-  var bttn = document.getElementById("getPriceNftByIdBttn");
+  var bttnPriceForId = document.getElementById("getPriceNftByIdBttn");
+  bttnPriceForId.addEventListener("click", async() => {
+    var id = document.getElementById("priceNftIdInput").value;
+    try {
+      var price = await pubSContract.getPriceForId(id);
+      // getPriceNftError.innerHTML = "Waiting response...";
+      // var response = await tx.wait();
+      getPriceNftError.innerHTML = price;
+    } catch (error) {
+      getPriceNftError.innerHTML = error.reason;
+    }
+  });
 
   // getProofs
   var bttn = document.getElementById("getProofsButtonId");
@@ -142,7 +228,7 @@ async function setUp() {
 
   // initSCsMumbai
 
-  // setUpListeners
+  setUpListeners();
 
   // setUpEventsContracts
 
