@@ -78,6 +78,9 @@ async function deployPublicSale() {
   
   //SET token contract addresses
 
+  // await ex(implPublicSale, setTokenContract, "0xe9bE45d717b89612f37E6A512ceeC8388A0416Fc", messageWhenFailed);
+  // await ex(implPublicSale, setUSDCContract, "0xe6666d3bcE86933b4a3b96f364a263d79312dEEc", messageWhenFailed);
+
   // var psC Contrato
   // deploySC;
 

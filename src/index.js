@@ -1,17 +1,16 @@
 import { Contract, ethers } from "ethers";
+const { MerkleTree } = require("merkletreejs");
 
 var usdcTknAbi = require("../artifacts/contracts/USDCoin.sol/USDCoin.json").abi;
 var bbitesTokenAbi = require("../artifacts/contracts/BBitesToken.sol/BBitesToken.json").abi;
-// import publicSaleAbi
 var publicSaleAbi = require("../artifacts/contracts/PublicSale.sol/PublicSale.json").abi;
-// import nftTknAbi
 var nftTknAbi = require("../artifacts/contracts/CuyCollectionNft.sol/CuyCollectionNFT.json").abi;
 
 // SUGERENCIA: vuelve a armar el MerkleTree en frontend
 // Utiliza la libreria buffer
 import buffer from "buffer/";
 import walletAndIds from "../wallets/walletList";
-import { MerkleTree } from "merkletreejs";
+
 var Buffer = buffer.Buffer;
 var merkleTree;
 
@@ -24,10 +23,33 @@ function hashToken(tokenId, account) {
   );
 }
 function buildMerkleTree() {
-  var elementosHasheados;
+  var elementosHasheados = walletAndIds.map(({ id, address }) => {
+    return hashToken(id, address);
+  });;
   merkleTree = new MerkleTree(elementosHasheados, ethers.keccak256, {
     sortPairs: true,
   });
+  var root = merkleTree.getHexRoot();
+  console.log("root "+root);
+  return root;
+}
+
+function buildProofs(tokenId, account){
+  // var hashedElements, proofs;
+  console.log("retrieving root...");
+  var root = buildMerkleTree();
+  console.log("root");
+
+  var hashedElements = hashToken(tokenId, account);
+  var proofs = merkleTree.getHexProof(hashedElements);
+  console.log(proofs);
+  // return proofs;
+  var belongs = merkleTree.verify(proofs, hashedElements, root);
+  console.log(belongs);
+  return {
+    'proofs': proofs,
+    'belongs': belongs
+  };
 }
 
 var provider, signer, account;
@@ -39,7 +61,7 @@ function initSCsGoerli() {
 
   usdcAddress = "0xe6666d3bcE86933b4a3b96f364a263d79312dEEc";
   bbitesTknAdd = "0xe9bE45d717b89612f37E6A512ceeC8388A0416Fc";
-  pubSContractAdd = "0xb044dA5A4E702023928E54b3A578233ad8e343c2";
+  pubSContractAdd = "0xfe44A01e4226d6D9E37025786F069A6b168A843a";
 
   // Contract = address + abi + provider
   usdcTkContract = new Contract(usdcAddress, usdcTknAbi, provider);
@@ -49,10 +71,8 @@ function initSCsGoerli() {
 
 function initSCsMumbai() {
   provider = new ethers.BrowserProvider(window.ethereum);
-
-  var nftAddress = "";
-
-  nftContract; // = new Contract(...
+  var nftAddress = "0xadC7cd04E6693C816ef8d314e526A5684f13D752";
+  nftContract = new Contract(nftAddress, nftTknAbi, provider);
 }
 
 function setUpListeners() {
@@ -170,7 +190,21 @@ function setUpListeners() {
   });
 
   // send Ether
-  var bttn = document.getElementById("sendEtherButton");
+  var bttnBuyEtherRandom = document.getElementById("sendEtherButton");
+  bttnBuyEtherRandom.addEventListener("click", async() => {
+    var purchaseError = document.getElementById("sendEtherError");
+    try {
+      purchaseError.innerHTML = "Approve transaction in Metamask...";
+      var tx = await pubSContract.connect(signer).depositEthForARandomNft({ value: 0.01 });
+      purchaseError.innerHTML = "Waiting response...";
+      var response = await tx.wait();
+      purchaseError.innerHTML = "Success! Transaction hash: " + response.hash;
+      
+    } catch (error) {
+      console.log(error);
+      purchaseError.innerHTML = error.reason;
+    }
+  });
 
   // getPriceForId
   var bttnPriceForId = document.getElementById("getPriceNftByIdBttn");
@@ -186,20 +220,67 @@ function setUpListeners() {
     }
   });
 
+  var btnOwnerforNFT = document.getElementById("getOwnerNftByIdBttn");
+  btnOwnerforNFT.addEventListener("click", async() => {
+    var getOwnerNFT = document.getElementById("getOwnerNftError");
+    var id = document.getElementById("ownerNftIdInput").value;
+    console.log(id);
+    try {
+      var owner = await nftContract.ownerOf(id);
+      // var response = await tx.wait();
+      console.log("owner" + owner);
+      getOwnerNFT.innerHTML = owner;
+    } catch (error) {
+      getOwnerNFT.innerHTML = error.reason;
+
+    }
+    
+  });
+
   // getProofs
-  var bttn = document.getElementById("getProofsButtonId");
-  bttn.addEventListener("click", async () => {
-    var id;
-    var address;
-    var proofs = merkleTree.getHexProof(hashToken(id, address));
-    navigator.clipboard.writeText(JSON.stringify(proofs));
+  var bttnProofs = document.getElementById("getProofsButtonId");
+  bttnProofs.addEventListener("click", async () => {
+    var id = document.getElementById("inputIdProofId").value;
+    var address = document.getElementById("inputAccountProofId").value;
+    var result = buildProofs(id, address);
+    var proofs = result.proofs;
+    var belongs = result.belongs;
+    var showProofsTextId = document.getElementById("showProofsTextId");
+    if (belongs) {
+      navigator.clipboard.writeText(JSON.stringify(proofs));
+      document.getElementById("whiteListToInputId").value = address;
+      document.getElementById("whiteListToInputTokenId").value = id;
+      // proofsInput.value = proofs;
+      showProofsTextId.innerHTML = proofs;
+    }else{
+      showProofsTextId.innerHTML = "Combination doesn't belong to whitelisted wallets";
+    }
+    
+
   });
 
   // safeMintWhiteList
-  var bttn = document.getElementById("safeMintWhiteListBttnId");
+  var bttnMintWhitelist = document.getElementById("safeMintWhiteListBttnId");
+  bttnMintWhitelist.addEventListener("click", async() => {
   // usar ethers.hexlify porque es un array de bytes
-  // var proofs = document.getElementById("whiteListToInputProofsId").value;
-  // proofs = JSON.parse(proofs).map(ethers.hexlify);
+    var proofs = document.getElementById("whiteListToInputProofsId").value;
+    proofs = JSON.parse(proofs).map(ethers.hexlify);
+    console.log(proofs);
+    var purchaseError = document.getElementById("whiteListErrorId");
+    try {
+      purchaseError.innerHTML = "Approve transaction in Metamask...";
+      var account = document.getElementById("whiteListToInputId").value;
+      var tokenId = document.getElementById("whiteListToInputTokenId").value;
+      var tx = await nftContract.connect(signer).safeMintWhiteList(account, tokenId, proofs);
+      purchaseError.innerHTML = "Waiting response...";
+      var response = await tx.wait();
+      // purchaseError.innerHTML = "Success! Transaction hash: " + response.hash;
+    } catch (error) {
+      console.log(error);
+      purchaseError.innerHTML = error.reason;
+    }
+  });
+  
 
   // buyBack
   var bttn = document.getElementById("buyBackBttn");
@@ -226,7 +307,7 @@ async function setUp() {
 
   initSCsGoerli();
 
-  // initSCsMumbai
+  initSCsMumbai();
 
   setUpListeners();
 

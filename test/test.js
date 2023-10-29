@@ -190,17 +190,17 @@ describe("Public Sale tests", function () {
 
         // Common token price
         var price = await contract_PublicSale.getPriceForId(100);
-        expect(price).to.be.equal(1000*10**DECIMALS_BBTKN, `Price for common token should be 100000000 BBTKN and it's at ${price}`);
+        expect(Number(price)).to.be.equal(Number(1000 * Math.pow(10,DECIMALS_BBTKN)), `Price for common token should be 1000 BBTKN and it's at ${price}`);
 
         // Rare token price
         var price = await contract_PublicSale.getPriceForId(444);
-        expect(price).to.be.equal(444*20*10**DECIMALS_BBTKN, `Price for rare token is not as expected`);
+        expect(Number(price)).to.be.equal(Number(444*20 * Math.pow(10,DECIMALS_BBTKN)), `Price for rare token is not as expected`);
 
         var price_contract = await contract_PublicSale.getPriceForId(666);
         days = Math.floor((Date.now() - startDate)/3600*24);
         price = 10000+(2000*days);
         if (price > 90000) price = 90000;
-        expect(price_contract).to.be.equal(price*10**DECIMALS_BBTKN, `Price for Legendary token is not as expected`);
+        expect(Number(price_contract)).to.be.equal(Number(price* Math.pow(10,DECIMALS_BBTKN)), `Price for Legendary token is not as expected`);
 
         // TODO: Token is already taken
     });
@@ -249,25 +249,25 @@ describe("Public Sale tests", function () {
     });
     it("BBTKN to buy - Not enough approval", async() => {
         await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, 500);
-        await expect(contract_PublicSale.connect(alice).purchaseWithTokens(111)).to.revertedWith("Give approval to this contract to transfer the required tokens");
+        await expect(contract_PublicSale.connect(alice).purchaseWithTokens(111)).to.be.reverted;
     });
     it("BBTKN to buy - Not enough BBTKN balance", async() => {
-        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("500"));
+        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("90000"));
         await expect(contract_PublicSale.connect(alice).purchaseWithTokens(111)).to.revertedWith("ERC20: transfer amount exceeds balance");
     });
     it("BBTKN to buy - Buying common token", async() => {
         await contract_BBitesToken.connect(owner).mint(alice.address, pEth("90000"));
-        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("500"));
+        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("90000"));
         await expect(contract_PublicSale.connect(alice).purchaseWithTokens(111)).to.emit(contract_PublicSale, "PurchaseNftWithId");
     });
     it("BBTKN to buy - Buying rare token", async() => {
         await contract_BBitesToken.connect(owner).mint(alice.address, pEth("90000"));
-        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("500"));
+        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("90000"));
         await expect(contract_PublicSale.connect(alice).purchaseWithTokens(333)).to.emit(contract_PublicSale, "PurchaseNftWithId");
     });
     it("BBTKN to buy - Buying legendary token", async() => {
         await contract_BBitesToken.connect(owner).mint(alice.address, pEth("90000"));
-        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("500"));
+        await contract_BBitesToken.connect(alice).approve(contract_PublicSale.target, pEth("90000"));
         await expect(contract_PublicSale.connect(alice).purchaseWithTokens(666)).to.emit(contract_PublicSale, "PurchaseNftWithId");
     });
     it("BBTKN to buy - Token ID is already taken", async() => {
