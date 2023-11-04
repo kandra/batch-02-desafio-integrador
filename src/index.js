@@ -321,17 +321,54 @@ function setUpListeners() {
 }
 
 function setUpEventsContracts() {
-  var pubSList = document.getElementById("pubSList");
-  // pubSContract - "PurchaseNftWithId"
+  // var pubSList = document.getElementById("pubSList");
+  // // pubSContract - "PurchaseNftWithId"
 
-  var bbitesListEl = document.getElementById("bbitesTList");
-  // bbitesCListener - "Transfer"
+  // var bbitesListEl = document.getElementById("bbitesTList");
+  // // bbitesCListener - "Transfer"
 
-  var nftList = document.getElementById("nftList");
-  // nftCListener - "Transfer"
+  // var nftList = document.getElementById("nftList");
+  // // nftCListener - "Transfer"
 
-  var burnList = document.getElementById("burnList");
+  // var burnList = document.getElementById("burnList");
   // nftCListener - "Burn"
+
+  // ====================
+  // PurchaseNftWithId(address account, uint256 id)
+  pubSContract.on("PurchaseNftWithId", (account, id) => {
+    var PSlist = document.getElementById("pubSList");
+    var li = document.createElement("li");
+    li.appendChild(document.createTextNode("Mint NFT {" + id + "} for account " + account));
+    PSlist.appendChild(li);
+    console.log("Event PurchaseNftWithId " + id + ", " + account);
+  });
+
+  // Transfer(address(0), to, tokenId)
+  nftContract.on("Transfer", (owner, account, id) => {
+    var nftList = document.getElementById("nftList");
+    var li = document.createElement("li");
+    li.appendChild(document.createTextNode("Mint NFT {" + id + "} for account " + account));
+    nftList.appendChild(li);
+    console.log("Event Transfer (mint) " + id + ", " + account);
+  });
+
+  // Burn(address account, uint256 id)
+  nftContract.on("Burn", (account, id) => {
+    var burnList = document.getElementById("burnList");
+    var li = document.createElement("li");
+    li.appendChild(document.createTextNode("Burn NFT {" + id + "} for account " + account));
+    burnList.appendChild(li);
+    console.log("Event Burn " + id + ", " + account);
+  });
+
+  // Transfer(address(0), account, amount);
+  bbitesTknContract.on("Transfer", (owner, account, amount) => {
+    var bbitesTList = document.getElementById("bbitesTList");
+    var li = document.createElement("li");
+    li.appendChild(document.createTextNode("Transfer Tokens {" + ethers.formatUnits(amount, 18) + "} from " + owner +" to account " + account));
+    bbitesTList.appendChild(li);
+    console.log("Event Transfer " + owner + " -> " + account + ": " + amount);
+  });
 }
 
 async function setUp() {
@@ -345,39 +382,8 @@ async function setUp() {
 
   setUpListeners();
 
-  // setUpEventsContracts
-  // ====================
-  // PurchaseNftWithId(address account, uint256 id)
-  pubSContract.on("PurchaseNftWithId", (account, id) => {
-    var PSlist = document.getElementById("pubSList");
-    var li = document.createElement("li");
-    li.appendChild(document.createTextNode("Mint NFT {" + id + "} for account " + account));
-    PSlist.appendChild(li)
-  });
-
-  // Transfer(address(0), to, tokenId)
-  nftContract.on("Transfer", (owner, account, id) => {
-    var nftList = document.getElementById("nftList");
-    var li = document.createElement("li");
-    li.appendChild(document.createTextNode("Mint NFT {" + id + "} for account " + account));
-    nftList.appendChild(li)
-  });
-
-  // Burn(address account, uint256 id)
-  nftContract.on("Burn", (account, id) => {
-    var burnlist = document.getElementById("burnList");
-    var li = document.createElement("li");
-    li.appendChild(document.createTextNode("Burn NFT {" + id + "} for account " + account));
-    burnlist.appendChild(li)
-  });
-
-  // Transfer(address(0), account, amount);
-  bbitesTknContract.on("Transfer", (owner, account, amount) => {
-    var bbitesTList = document.getElementById("bbitesTList");
-    var li = document.createElement("li");
-    li.appendChild(document.createTextNode("Transfer Tokens {" + ethers.formatUnits(amount, 18) + "} from " + owner +" to account " + account));
-    bbitesTList.appendChild(li)
-  });
+  setUpEventsContracts();
+  
 
   // buildMerkleTree
 }
