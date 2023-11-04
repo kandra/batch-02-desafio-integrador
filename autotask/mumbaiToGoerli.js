@@ -23,7 +23,6 @@ exports.handler = async function (data) {
   );
   // Mismos params que en el evento
   var { account, id } = event[0].params;
-  return event[0];
 
   // Ejecutar 'mint' en Goerli del contrato 
   var bbTokenAddress = "0xe9bE45d717b89612f37E6A512ceeC8388A0416Fc";
