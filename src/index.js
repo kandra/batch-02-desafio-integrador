@@ -303,7 +303,21 @@ function setUpListeners() {
   
 
   // buyBack
-  var bttn = document.getElementById("buyBackBttn");
+  var bttnBuyBack = document.getElementById("buyBackBttn");
+  bttnBuyBack.addEventListener("click", async() => {
+      var tokenId = document.getElementById("buyBackInputId").value;
+      console.log(tokenId);
+      try {
+        buyBackErrorId.innerHTML = "Approve transaction in Metamask...";
+        var tx = await nftContract.connect(signer).buyBack(tokenId);
+        buyBackErrorId.innerHTML = "Waiting response...";
+        var response = await tx.wait();
+        buyBackErrorId.innerHTML = "Success! Transaction hash: " + response.hash;
+      } catch (error) {
+        console.log(error);
+        buyBackErrorId.innerHTML = error.reason;
+      }
+    });
 }
 
 function setUpEventsContracts() {
@@ -332,6 +346,38 @@ async function setUp() {
   setUpListeners();
 
   // setUpEventsContracts
+  // ====================
+  // PurchaseNftWithId(address account, uint256 id)
+  pubSContract.on("PurchaseNftWithId", (account, id) => {
+    var PSlist = document.getElementById("pubSList");
+    var li = document.createElement("li");
+    li.appendChild(document.createTextNode("Mint NFT {" + id + "} for account " + account));
+    PSlist.appendChild(li)
+  });
+
+  // Transfer(address(0), to, tokenId)
+  nftContract.on("Transfer", (owner, account, id) => {
+    var nftList = document.getElementById("nftList");
+    var li = document.createElement("li");
+    li.appendChild(document.createTextNode("Mint NFT {" + id + "} for account " + account));
+    nftList.appendChild(li)
+  });
+
+  // Burn(address account, uint256 id)
+  nftContract.on("Burn", (account, id) => {
+    var burnlist = document.getElementById("burnList");
+    var li = document.createElement("li");
+    li.appendChild(document.createTextNode("Burn NFT {" + id + "} for account " + account));
+    burnlist.appendChild(li)
+  });
+
+  // Transfer(address(0), account, amount);
+  bbitesTknContract.on("Transfer", (owner, account, amount) => {
+    var bbitesTList = document.getElementById("bbitesTList");
+    var li = document.createElement("li");
+    li.appendChild(document.createTextNode("Transfer Tokens {" + ethers.formatUnits(amount, 18) + "} from " + owner +" to account " + account));
+    bbitesTList.appendChild(li)
+  });
 
   // buildMerkleTree
 }
