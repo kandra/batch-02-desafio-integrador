@@ -87,6 +87,9 @@ function setUpListeners() {
       console.log("Billetera metamask", account);
       walletIdEl.innerHTML = account;
       signer = await provider.getSigner(account);
+
+      // prefill whitelist id
+      document.getElementById("inputAccountProofId").value = account;
     }
   });
 
@@ -220,6 +223,23 @@ function setUpListeners() {
     }
   });
 
+  var btnOwnerforNFTPS = document.getElementById("getOwnerNftByIdBttnPS");
+  btnOwnerforNFTPS.addEventListener("click", async() => {
+    var getOwnerNFTPS = document.getElementById("getOwnerNftErrorPS");
+    var id = document.getElementById("ownerNftIdInputPS").value;
+    console.log(id);
+    try {
+      var owner = await pubSContract.tokenBuyer(id);
+      // var response = await tx.wait();
+      console.log("owner" + owner);
+      getOwnerNFTPS.innerHTML = owner;
+    } catch (error) {
+      getOwnerNFTPS.innerHTML = error.reason;
+
+    }
+    
+  });
+
   var btnOwnerforNFT = document.getElementById("getOwnerNftByIdBttn");
   btnOwnerforNFT.addEventListener("click", async() => {
     var getOwnerNFT = document.getElementById("getOwnerNftError");
@@ -274,7 +294,7 @@ function setUpListeners() {
       var tx = await nftContract.connect(signer).safeMintWhiteList(account, tokenId, proofs);
       purchaseError.innerHTML = "Waiting response...";
       var response = await tx.wait();
-      // purchaseError.innerHTML = "Success! Transaction hash: " + response.hash;
+      purchaseError.innerHTML = "Success! Transaction hash: " + response.hash;
     } catch (error) {
       console.log(error);
       purchaseError.innerHTML = error.reason;

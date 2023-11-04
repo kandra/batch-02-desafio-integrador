@@ -27,8 +27,8 @@ contract PublicSale is Pausable, AccessControl {
     mapping(uint256 => address) public tokenBuyer;
     uint256 misticAvailable = 300;
 
-    address addressTokenUSDC;
-    address addressTokenBBTKN;
+    address public addressTokenUSDC;
+    address public addressTokenBBTKN;
 
     event PurchaseNftWithId(address account, uint256 id);
 
@@ -42,12 +42,8 @@ contract PublicSale is Pausable, AccessControl {
     }
 
     function purchaseWithTokens(uint256 _id) public whenNotPaused {
-        // console.log("id: %s", _id);
-        // require(_id >= 699, "Token ID is out of range 0 - 699");
-        // require(tokenBuyer[_id]==address(0), "Token ID has already been claimed");
         uint256 price = getPriceForId(_id);
         uint256 allowance = bbitesToken.allowance(msg.sender, address(this));
-        console.log("allowance: %s, price %s", allowance, price);
         require(allowance >= price, "Give approval to this contract to transfer the required tokens");
         bbitesToken.transferFrom(msg.sender, address(this), price);
         tokenBuyer[_id] = msg.sender;
@@ -80,7 +76,7 @@ contract PublicSale is Pausable, AccessControl {
             msg.sender,
             block.timestamp + 2000
         );
-        console.log("amount returned swap tokens: %s / %s", amounts[0], amounts[1]);
+        // console.log("amount returned swap tokens: %s / %s", amounts[0], amounts[1]);
 
         // transfiere el excedente de USDC a msg.sender
         uint256 change = _amountIn - amounts[0];
@@ -130,7 +126,7 @@ contract PublicSale is Pausable, AccessControl {
             payable(msg.sender).transfer(change);
         }
         misticAvailable--;
-    console.log("%s", _randomToken);
+    // console.log("%s", _randomToken);
         emit PurchaseNftWithId(msg.sender, _randomToken);
     }
 
@@ -178,20 +174,22 @@ contract PublicSale is Pausable, AccessControl {
     function getPriceForId(uint256 id) public view returns(uint256){
         require(id < 700, "Token ID must be between 0 and 699");
         require(tokenBuyer[id] == address(0), "Token ID is already taken");
+        uint256 priceToken = 0;
         
         if (id <= 199){
-            return 1000*10**DECIMALS_BBTKN;
+            priceToken = 1000*10**DECIMALS_BBTKN;
         }else if (id >= 200 && id <=499){
-            return id*20*10**DECIMALS_BBTKN;
+            priceToken = id*20*10**DECIMALS_BBTKN;
         }else if (id >= 500 && id <= 699){
             uint256 daysPassed = (block.timestamp - startDate)/86400;
             uint256 price = 10000*(2000*daysPassed);
             if (price>90000){
-                return 90000*10**DECIMALS_BBTKN;
+                priceToken = 90000*10**DECIMALS_BBTKN;
             }else{
-                return price*10**DECIMALS_BBTKN;
+                priceToken = price*10**DECIMALS_BBTKN;
             }
         }
+        return priceToken;
     }
 
     function _getRandomNumber700to999() internal view returns (uint256){
