@@ -32,7 +32,7 @@
     <h2>Approves (USDC y BBToken) en Goerli</h2>
     <div>
         <label for="approveInput">Approve BBites Token a Public Sale</label>
-        <input type="text" id="approveInput" name="approveInput" placeholder="# BBtokens to approve">
+        <input type="text" id="approveInput" name="approveInput" placeholder="# BBtokens to approve" value="999999999999999999999999">
         <button id="approveButtonBBTkn">Approve</button>
         <span id="approveError" style="color: red;"></span>
     </div>
@@ -86,6 +86,22 @@
         <span id="priceNftByIdText"></span>
         <span id="getPriceNftError" style="color: red;"></span>
     </div>
+    <h2>NFT Owner</h2>
+    <div>
+        <label for="ownerNftIdInputPS">Consult NFT Owner by id (Public Sale / Goerli)</label>
+        <input type="number" id="ownerNftIdInputPS" name="ownerNftIdInputPS" placeholder="NFT id">
+        <button id="getOwnerNftByIdBttnPS">Get Owner</button>
+        <span id="ownerNftByIdTextPS"></span>
+        <span id="getOwnerNftErrorPS" style="color: red;"></span>
+    </div>
+    <div>
+        <label for="ownerNftIdInput">Consult NFT Owner by id (Token contract / Mumbai)</label>
+        <input type="number" id="ownerNftIdInput" name="ownerNftIdInput" placeholder="NFT id">
+        <button id="getOwnerNftByIdBttn">Get Owner</button>
+        <span id="ownerNftByIdText"></span>
+        <span id="getOwnerNftError" style="color: red;"></span>
+    </div>
+
 
     </br>
     <h2>Acuñando de whitelist en NFT Contract en Mumbai</h2>
@@ -94,7 +110,7 @@
         <input type="number" id="inputIdProofId" name="inputIdProof" placeholder="NFT id">
         <input type="text" id="inputAccountProofId" name="inputAccountProof" placeholder="Account">
         <button id="getProofsButtonId">Print and Copy To Clipboard</button>
-        <span id="showProofsTextId"></span>
+        <span id="showProofsTextId" style="color: red;"></span>
     </div>
 
     </br>
@@ -118,14 +134,14 @@
     </br>
     <h2>Eventos</h2>
     <h3>Contrato Public Sale (Goerli)</h3>
-    <div id="pubSList"></div>
+    <ul id="pubSList"></ul>
 
     <h3>Contrato BBites Token (Goerli)</h3>
-    <div id="bbitesTList"></div>
+    <ul id="bbitesTList"></ul>
 
     <h3>Contrato NFT (Mumbai) </h3>
-    <div id="nftList"></div>
-    <div id="burnList"></div>
+    <ul id="nftList"></ul>
+    <ul id="burnList"></ul>
 
 </body>
 
